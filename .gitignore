@@ -1,0 +1,73 @@
+# Secrets / environment
+.env
+.env.*
+!.env.example
+*.secret
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtualenv
+.venv/
+venv/
+env/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+*.db-journal
+
+# Runtime state (credentials, dumps, reports, smart scans)
+runtime/
+instance/
+
+# Logs
+logs/
+*.log
+
+# Backups
+backup/
+backups/
+*.bak
+*.old
+*.orig
+
+# User RF/RFID artifacts (never commit real captures)
+uploads/
+captures/
+dumps/
+exports/
+sessions/
+*.dump
+*.mfd
+*.eml
+*.pm3
+*.rfraw
+*.bin
+
+# Temporary
+tmp/
+temp/
+*.tmp
+*.swp
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store

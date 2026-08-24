@@ -1,0 +1,29 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python tools/security_audit.py
+      - run: python -m ruff check app tests tools main.py
+      - run: python -m pytest -q
+        env:
+          UTAMO_RUNTIME_DIR: ${{ runner.temp }}/utamo-runtime
+          UTAMO_RF_DB_PATH: ${{ runner.temp }}/utamo-runtime/test.db
+          UTAMO_ADMIN_PASSWORD: test-password
+          UTAMO_RESET_ADMIN_PASSWORD: "1"
+          UTAMO_PM3_MODE: ANALYSIS_ONLY

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="hero">
+  <h2>Dumps RFID / MIFARE</h2>
+  <p>Importe dumps do Proxmark3 ou cole blocos hexadecimais. Depois da importação o sistema abre uma tela própria com informações do cartão, setores, blocos, trailers, chaves, access bits, ASCII e indicadores.</p>
+</section>
+
+<div class="grid2">
+  <section class="card" id="import">
+    <h2>Importar arquivo de dump</h2>
+    <form method="post" action="/card-dump/upload" enctype="multipart/form-data"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="row2"><input name="dump_name" placeholder="Nome do caso/dump"><input type="file" name="dump_file" accept=".json,.eml,.txt,.hex,.bin,.dump,.mfd,.rfid,.mct,.mfu,.nfc"></div>
+      <select name="session_id" class="spacer-top-sm"><option value="">Sem sessão vinculada</option>{% for s in sessions %}<option value="{{ s.id }}">#{{ s.id }} — {{ s.name }}</option>{% endfor %}</select><div class="actions"><button>Importar e abrir análise</button><span class="pill">.json .eml .bin .dump .mfd .mct .mfu .nfc</span></div>
+    </form>
+  </section>
+
+  <section class="card" id="paste">
+    <h2>Analisar texto colado</h2>
+    <form method="post" action="/card-dump/text"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input name="name" placeholder="manual_dump.eml">
+      <textarea name="content" placeholder="Cole blocos hexadecimais de 16 bytes por linha, dump EML/MCT ou saída estruturada do Proxmark3"></textarea>
+      <div class="actions"><button>Analisar e abrir relatório</button></div>
+    </form>
+  </section>
+</div>
+
+<section class="card" id="mifare-import">
+  <h2>Importação MIFARE Classic estrutural / legado</h2>
+  <form method="post" action="/mifare/import"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="row2"><input name="card_uid" data-sensitive-input="uid" placeholder="UID ou identificador do cartão"><textarea name="dump_text" placeholder="Blocos do dump MIFARE Classic: bloco: HEX ou HEX puro"></textarea></div>
+    <div class="actions"><button>Importar no analisador novo</button><span class="pill">redireciona para /card-dump</span></div>
+  </form>
+</section>
+
+<section class="card" id="list">
+  <div class="toolbar"><h2 class="heading-reset">Dumps analisados</h2><a class="btn" href="/compare">Comparar dumps</a></div>
+  <div class="scroll">
+    <table>
+      <tr><th>ID</th><th>Dump</th><th>Tipo</th><th>UID</th><th>Risco</th><th>Setores</th><th>Blocos</th><th></th></tr>
+      {% for d in dumps %}
+      <tr>
+        <td class="mono">#{{ d.id }}</td>
+        <td>{{ d.dump_name }}<br><span class="muted">{{ d.created_at }}</span></td>
+        <td>{{ d.card_type }}</td>
+        <td class="mono" data-sensitive="uid">{{ d.uid or '--' }}</td>
+        <td class="risk-{{ d.risk_level }}">{{ d.risk_level }}</td>
+        <td>{{ d.sector_count }}</td>
+        <td>{{ d.block_count }}</td>
+        <td><a href="/card-dump/{{ d.id }}">Abrir análise</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="muted">Nenhum dump importado.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</section>
+
+<section class="card" id="mifare-cards">
+  <h2>Cartões MIFARE estruturais</h2>
+  <div class="scroll">
+    <table><tr><th>UID</th><th>Blocos</th><th>Última análise</th><th></th></tr>
+    {% for c in mifare_cards %}<tr><td class="mono" data-sensitive="uid">{{ c.card_uid }}</td><td>{{ c.total_blocks }}</td><td>{{ c.last_seen }}</td><td><a href="/mifare/{{ c.card_uid }}">Abrir mapa</a></td></tr>{% else %}<tr><td colspan="4" class="muted">Nenhum cartão importado.</td></tr>{% endfor %}
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,21 @@
+# Normalize line endings
+* text=auto
+
+*.py text eol=lf
+*.sh text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.sql text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.txt text eol=lf
+*.example text eol=lf
+
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary formats (never diffed or normalized)
+*.db binary
+*.sqlite binary

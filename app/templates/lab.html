@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="hero">
+  <h2>Proxmark3</h2>
+  <p>O executável e a porta são definidos na configuração local. Os pedidos de execução não podem substituir o caminho do cliente. Em <b>ANALYSIS_ONLY</b>, somente comandos de identificação e leitura presentes na allowlist são executados.</p>
+  <div class="actions"><a class="btn" href="/sessions">Sessões</a><a class="btn" href="/dumps">Dumps</a><a class="btn" href="/protocols">Protocolos</a></div>
+</section>
+
+<section class="card" id="configuration">
+  <h2>Configuração local do cliente</h2>
+  <form method="post" action="/settings/proxmark"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="row2"><input name="proxmark_client_path" placeholder="Caminho do proxmark3.exe ou wrapper .bat" value="{{ client_path }}"><input name="proxmark_port" placeholder="COM5" value="{{ default_port }}"></div>
+    <div class="spacer-top-sm"><input name="mfc_key_file" placeholder="Arquivo BIN de chaves MIFARE Classic (opcional; somente para dump read-only)" value="{{ mfc_key_file }}"></div>
+    <div class="actions"><button type="submit">Salvar configuração</button><span class="pill">caminhos não são aceitos pelo endpoint de execução</span><span class="pill">ataques automáticos desativados</span></div>
+  </form>
+</section>
+
+<section class="card" id="smart-scan">
+  <div class="toolbar">
+    <div><h2 class="heading-reset">Leitura inteligente do cartão</h2><p class="muted subtitle-reset">Executa <span class="mono">hf search</span>, classifica a família, coleta somente informações read-only e envia dumps obtidos ao analisador normalizado.</p></div>
+    <a class="btn" href="/smart-scans">Histórico completo</a>
+  </div>
+  <div class="warning">Mantenha um único cartão imóvel sobre a antena durante todo o processo. O fluxo não executa recuperação de chaves, escrita, simulação, replay, sniffing ou APDUs brutos.</div>
+  <form id="smart-scan-form" class="spacer-top-md"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="grid3">
+      <label class="quick-card"><input class="checkbox-inline" type="checkbox" name="auto_dump" checked>Tentar dump read-only<br><span class="muted small">Usa apenas chaves já disponíveis; falha controladamente quando a memória está protegida.</span></label>
+      <label class="quick-card"><input class="checkbox-inline" type="checkbox" name="read_ndef" checked>Ler NDEF acessível<br><span class="muted small">Consulta registros públicos sem formatar ou alterar o cartão.</span></label>
+      <label class="quick-card"><input class="checkbox-inline" type="checkbox" name="enforce_uid" checked>Abortar se o UID mudar<br><span class="muted small">Evita combinar informações de cartões diferentes.</span></label>
+    </div>
+    <div class="row2 spacer-top">
+      <select name="session_id"><option value="">Sem sessão</option>{% for s in sessions %}<option value="{{ s.id }}">#{{ s.id }} — {{ s.name }}</option>{% endfor %}</select>
+      <button id="smart-scan-start" type="submit" {% if not client_path %}disabled{% endif %}>Detectar e analisar</button>
+    </div>
+  </form>
+  <div id="smart-scan-live" class="spacer-top" hidden>
+    <div class="toolbar"><div><b id="smart-scan-title">Preparando leitura</b><div id="smart-scan-subtitle" class="muted small"></div></div><button id="smart-scan-cancel" class="danger" type="button">Cancelar</button></div>
+    <div class="progress-track"><div id="smart-scan-progress" class="progress-bar"></div></div>
+    <div class="grid4 spacer-top">
+      <div class="metric"><b>Status</b><strong id="smart-status" class="metric-compact">queued</strong></div>
+      <div class="metric"><b>Cartão</b><strong id="smart-card" class="metric-compact">--</strong></div>
+      <div class="metric"><b>UID</b><strong id="smart-uid" class="mono metric-compact" data-sensitive="uid">--</strong></div>
+      <div class="metric"><b>Aquisição</b><strong id="smart-acquisition" class="metric-compact">--</strong></div>
+    </div>
+    <div id="smart-scan-message" class="notice spacer-top" data-sensitive-text></div>
+    <div id="smart-scan-steps" class="scroll scroll-300 spacer-top"></div>
+    <div id="smart-scan-actions" class="actions"></div>
+  </div>
+  <h3 class="spacer-top-lg">Leituras recentes</h3>
+  <div class="scroll scroll-240"><table><tr><th>ID</th><th>Status</th><th>Cartão</th><th>UID</th><th>Aquisição</th><th>Data</th></tr>{% for j in smart_scans %}<tr><td><a href="/smart-scan/{{ j.id }}">#{{ j.id }}</a></td><td><span class="pill">{{ j.status }}</span></td><td>{{ j.card_type or '--' }}</td><td class="mono" data-sensitive="uid">{{ j.uid or '--' }}</td><td>{{ j.acquisition_status or '--' }}</td><td class="muted">{{ j.created_at }}</td></tr>{% else %}<tr><td colspan="6" class="muted">Nenhuma leitura inteligente registrada.</td></tr>{% endfor %}</table></div>
+</section>
+
+<div class="grid2">
+  <section class="card" id="proxmark">
+    <h2>Executar comando</h2>
+    {% if not client_path %}<div class="warning">Configure o caminho do cliente Proxmark3 antes de executar.</div>{% endif %}
+    <form method="post" action="/proxmark/run"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="row2"><input value="{{ client_path or 'Cliente não configurado' }}" readonly><input value="{{ default_port }}" readonly></div>
+      <div class="row2 spacer-top-sm"><input id="pm3-command" name="command" list="pm3_command_catalog" placeholder="Comando Proxmark3" value="hf search"><input name="timeout" type="number" min="5" max="{{ config.PM3_MAX_TIMEOUT }}" value="{{ config.PM3_MAX_TIMEOUT }}"></div>
+      <div class="row2 spacer-top-sm">
+        <select name="session_id"><option value="">Sem sessão</option>{% for s in sessions %}<option value="{{ s.id }}">#{{ s.id }} — {{ s.name }}</option>{% endfor %}</select>
+        <select data-command-picker="#pm3-command"><option value="">Favoritos rápidos</option>{% for f in favorites %}<option value="{{ f.command }}">{{ f.protocol }} — {{ f.name }}</option>{% endfor %}</select>
+      </div>
+      <datalist id="pm3_command_catalog">
+        {% for p in protocols %}{% for cmd in p.safe_commands %}<option value="{{ cmd }}">{{ p.name }}</option>{% endfor %}{% endfor %}
+        {% if pm3_mode == 'OPERATOR_LAB' %}{% for p in protocols %}{% for cmd in p.advanced_commands %}<option value="{{ cmd }}">{{ p.name }} — avançado</option>{% endfor %}{% endfor %}{% endif %}
+        {% for f in favorites %}<option value="{{ f.command }}">{{ f.name }}</option>{% endfor %}
+      </datalist>
+      {% if pm3_mode == 'OPERATOR_LAB' %}<label class="warning block spacer-top"><input type="checkbox" name="confirm_sensitive" value="1"> Confirmo a execução de comandos avançados ou não catalogados neste laboratório autorizado.</label>{% endif %}
+      <div class="actions"><button type="submit">Executar</button><span class="pill">{{ pm3_mode }}</span><span class="pill">auditoria ativa</span><span class="pill">shell desativado</span>{% if pm3_mode == 'OPERATOR_LAB' %}<span class="pill">confirmação avançada obrigatória</span>{% endif %}</div>
+    </form>
+
+    <h3 class="spacer-top-lg">Salvar favorito</h3>
+    <form method="post" action="/commands/favorite"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><div class="row"><input name="name" placeholder="Nome"><input name="protocol" placeholder="Protocolo"><input name="command" placeholder="Comando"></div><div class="actions"><button type="submit">Adicionar favorito</button></div></form>
+
+    <h2 class="spacer-top-lg">Portas detectadas</h2>
+    <div class="scroll"><table><tr><th>Porta</th><th>Tipo</th><th>Conf.</th><th>Descrição</th></tr>{% for p in ports %}<tr><td class="mono">{{ p.device }}</td><td>{{ p.device_type }}</td><td>{{ p.confidence }}</td><td>{{ p.description }}<br><span class="muted">{{ p.notes }}</span></td></tr>{% else %}<tr><td colspan="4" class="muted">Nenhuma porta detectada.</td></tr>{% endfor %}</table></div>
+  </section>
+
+  <section class="card" id="parse">
+    <h2>Interpretar saída Proxmark3</h2>
+    <form method="post" action="/proxmark/parse"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><textarea name="output" data-sensitive-input="text" placeholder="Cole saída de identificação ou leitura do Proxmark3."></textarea><div class="actions"><button type="submit">Interpretar saída</button><span class="pill">gera evento</span></div></form>
+    <h3>Histórico recente</h3>
+    <div class="scroll scroll-260">{% for h in history %}<div class="logline"><span class="pill">{{ h.status }}</span> <button type="button" data-use-command="{{ h.command }}">usar</button> <span class="mono">{{ h.command }}</span><br><span class="muted">{{ h.port }} — {{ h.created_at }}</span></div>{% else %}<p class="muted">Sem histórico.</p>{% endfor %}</div>
+  </section>
+</div>
+
+<section class="card" id="events"><div class="toolbar"><h2 class="heading-reset">Eventos PM3 recentes</h2><form method="post" action="/maintenance/clear-events"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="danger" type="submit">Limpar eventos</button></form></div><div class="scroll">{% for e in pm3_events %}<div class="logline"><span class="pill risk-{{ e.severity }}">{{ e.severity }}</span> <b>{{ e.event_type }}</b> <span class="muted mono">UID=<span data-sensitive="uid">{{ e.uid or '--' }}</span></span><br><span class="muted" data-sensitive-text>{{ e.summary }} — {{ e.created_at }}</span></div>{% else %}<p class="muted">Nenhum evento PM3 registrado.</p>{% endfor %}</div></section>
+<section class="card" id="logs"><div class="toolbar"><h2 class="heading-reset">Logs Proxmark3</h2><form method="post" action="/maintenance/clear-logs"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="danger" type="submit">Limpar logs</button></form></div><div class="scroll">{% for l in logs %}<div class="logline"><span class="pill">{{ l.status }}</span> <span class="mono">{{ l.port }}</span> <span class="muted">{{ l.command }} — {{ l.timestamp }}</span><br><span class="mono" data-sensitive-text>{{ l.output }}</span></div>{% else %}<p class="muted">Nenhum log registrado.</p>{% endfor %}</div></section>
+{% endblock %}

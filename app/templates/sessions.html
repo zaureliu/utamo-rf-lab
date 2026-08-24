@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="hero"><h2>Sessões de laboratório</h2><p>Agrupe comandos Proxmark, logs e dumps por caso/análise.</p></section>
+<section class="card">
+  <h2>Nova sessão</h2>
+  <form method="post" action="/sessions"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><div class="row2"><input name="name" placeholder="Ex.: Teste cartão empresa X"><input name="description" placeholder="Descrição curta"></div><div class="actions"><button>Criar sessão</button></div></form>
+</section>
+<section class="card"><h2>Sessões</h2><table><tr><th>ID</th><th>Nome</th><th>Status</th><th>Atualizada</th><th></th></tr>{% for s in sessions %}<tr><td>#{{ s.id }}</td><td>{{ s.name }}<br><span class="muted">{{ s.description }}</span></td><td>{{ s.status }}</td><td>{{ s.updated_at }}</td><td><a href="/sessions/{{ s.id }}">Abrir</a></td></tr>{% else %}<tr><td colspan="5" class="muted">Nenhuma sessão criada.</td></tr>{% endfor %}</table></section>
+{% endblock %}

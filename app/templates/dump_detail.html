@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="hero">
+  <h2>Análise do dump #{{ data.dump.id }}</h2>
+  <p>{{ data.dump.dump_name }} — {{ data.dump.card_type }} — UID <span class="mono" data-sensitive="uid">{{ data.dump.uid or '--' }}</span></p>
+  <div class="actions">
+    <a class="btn" href="/dumps">Voltar aos dumps</a>
+    <a class="btn" href="/compare">Comparar</a>
+    <a class="btn" href="/card-dump/{{ data.dump.id }}/export/html">Exportar HTML</a>
+    <a class="btn" href="/card-dump/{{ data.dump.id }}/export/pdf">Exportar PDF</a>
+    <a class="btn" href="/card-dump/{{ data.dump.id }}/export/csv">Exportar CSV</a>
+    <a class="btn" href="/card-dump/{{ data.dump.id }}/export/json">Exportar JSON</a>
+  </div>
+</section>
+
+{% if data.dump.duplicate_of %}
+<div class="warning">Esta dump tem o mesmo SHA256 de uma análise anterior: <a href="/card-dump/{{ data.dump.duplicate_of }}">dump #{{ data.dump.duplicate_of }}</a>.</div>
+{% endif %}
+
+<div class="grid4">
+  <div class="card metric"><b>Tipo</b><strong class="metric-compact">{{ data.dump.card_type }}</strong></div>
+  <div class="card metric"><b>Risco</b><strong class="risk-{{ data.dump.risk_level }}">{{ data.dump.risk_level }}</strong></div>
+  <div class="card metric"><b>{{ 'Páginas' if data.summary.storage_model == 'pages' else 'Blocos' }}</b><strong>{{ data.dump.block_count }}</strong></div>
+  <div class="card metric"><b>Grupos/Setores</b><strong>{{ data.dump.sector_count }}</strong></div>
+</div>
+
+<section class="card">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="resumo">Resumo</button>
+    <button class="tab-btn" data-tab="setores">Setores/Páginas</button>
+    <button class="tab-btn" data-tab="blocos">Blocos</button>
+    <button class="tab-btn" data-tab="chaves">Chaves</button>
+    <button class="tab-btn" data-tab="access">Access Bits</button>
+    <button class="tab-btn" data-tab="ndef">NDEF</button>
+    <button class="tab-btn" data-tab="relatorio">Relatório</button>
+  </div>
+
+  <div id="tab-resumo" class="tab-panel active">
+    <div class="grid2">
+      <div>
+        <h3>Identificação</h3>
+        <div class="kv"><span>UID</span><b class="mono" data-sensitive="uid">{{ data.dump.uid or '--' }}</b></div>
+        <div class="kv"><span>SAK</span><b class="mono">{{ data.dump.sak or '--' }}</b></div>
+        <div class="kv"><span>ATQA</span><b class="mono">{{ data.dump.atqa or '--' }}</b></div>
+        <div class="kv"><span>SHA256</span><b class="mono small">{{ data.dump.sha256 }}</b></div>
+        <div class="kv"><span>Arquivo</span><b>{{ data.dump.file_name }}</b></div>
+        <div class="kv"><span>Criado em</span><b>{{ data.dump.created_at }}</b></div>
+      </div>
+      <div>
+        <h3>Indicadores</h3>
+        <div class="kv"><span>Indicadores estáticos</span><b>{{ data.summary.security_evidence.score if data.summary.security_evidence else '--' }}</b></div>
+        <div class="kv"><span>Entropia média</span><b>{{ data.statistics.entropy_avg or 0 }}</b></div>
+        <div class="kv"><span>Vazios</span><b>{{ data.statistics.empty_blocks or 0 }}</b></div>
+        <div class="kv"><span>Trailers</span><b>{{ data.statistics.trailer_blocks or 0 }}</b></div>
+        <div class="kv"><span>Setores com chave pública/default</span><b>{{ data.statistics.default_key_sectors or 0 }}</b></div>
+        <div class="kv"><span>NDEF</span><b>{{ 'detectado' if data.ndef.found else 'não detectado' }}</b></div>
+      </div>
+    </div>
+    <h3>Recomendações</h3>
+    {% for r in data.recommendations %}<div class="notice">{{ r }}</div>{% else %}<p class="muted">Sem recomendações geradas.</p>{% endfor %}
+    <h3>Razões de risco</h3>
+    {% for r in data.risk_reasons %}<span class="pill">{{ r }}</span>{% else %}<span class="pill">Sem razão crítica</span>{% endfor %}
+  </div>
+
+  <div id="tab-setores" class="tab-panel">
+    <div class="sector-grid">
+      {% for s in data.sectors %}
+      <div class="sector-card riskbox-{{ data.dump.risk_level }}">
+        <div class="sector-head"><b>Grupo/Setor {{ s.sector }}</b><span class="pill">{{ s.blocks|length }} itens</span></div>
+        <div class="badge-row">
+          {% for f in s.risk_flags %}<span class="pill">{{ f }}</span>{% endfor %}
+          {% if s.access_bits %}<span class="pill mono">AC {{ s.access_bits }}</span>{% endif %}
+        </div>
+        <p class="muted">Entropia média: {{ s.entropy_avg }} | Vazios: {{ s.empty_blocks }} | ASCII: {{ s.ascii_blocks }}</p>
+        {% if s.trailer %}
+        <div class="key-grid mono small"><div>Key A<br><span data-sensitive="key">{{ s.trailer.key_a or '--' }}</span></div><div>Access<br>{{ s.trailer.access_bits or '--' }}</div><div>Key B<br><span data-sensitive="key">{{ s.trailer.key_b or '--' }}</span></div></div>
+        {% endif %}
+        {% for b in s.blocks[:6] %}<div class="block-row {{ 'trailer' if b.is_trailer else '' }}"><b>#{{ b.absolute_block }}</b> <code class="mono"{% if b.is_trailer %} data-sensitive="mifare-trailer"{% endif %}>{{ b.block_hex }}</code></div>{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div id="tab-blocos" class="tab-panel">
+    <div class="filters">
+      <button class="filter-btn" data-filter="all">Todos</button>
+      <button class="filter-btn" data-filter="trailer">Trailers</button>
+      <button class="filter-btn" data-filter="empty">Vazios</button>
+      <button class="filter-btn" data-filter="default">Chave default</button>
+      <button class="filter-btn" data-filter="ascii">ASCII</button>
+      <button class="filter-btn" data-filter="value">Value block</button>
+    </div>
+    <div class="scroll">
+      {% for b in data.blocks %}
+      {% set flags = [] %}
+      {% if b.is_trailer %}{% set _ = flags.append('trailer') %}{% endif %}
+      {% if b.is_empty %}{% set _ = flags.append('empty') %}{% endif %}
+      {% if b.has_default_key %}{% set _ = flags.append('default') %}{% endif %}
+      {% if b.has_ascii %}{% set _ = flags.append('ascii') %}{% endif %}
+      {% if b.is_value_block %}{% set _ = flags.append('value') %}{% endif %}
+      <div class="block-row {{ 'trailer' if b.is_trailer else '' }}" data-block="1" data-flags="{{ flags|join(',') }}">
+        <div><b>Setor {{ b.sector }} / Bloco {{ b.block_index }} / Abs {{ b.absolute_block }}</b> {% if b.is_trailer %}<span class="pill">TRAILER</span>{% endif %}</div>
+        <div class="mono hexline"{% if b.is_trailer %} data-sensitive="mifare-trailer"{% endif %}>{{ b.block_hex }}</div>
+        <div class="muted mono">ASCII: {{ b.ascii }}</div>
+        <div class="badge-row">{% for a in b.annotation_preview %}<span class="pill">{{ a }}</span>{% endfor %}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div id="tab-chaves" class="tab-panel">
+    <table><tr><th>Setor</th><th>Key A</th><th>Access</th><th>Key B</th><th>Indicadores</th></tr>
+      {% for s in data.sectors if s.trailer %}
+      <tr><td>{{ s.sector }}</td><td class="mono" data-sensitive="key">{{ s.trailer.key_a }}</td><td class="mono">{{ s.trailer.access_bits }}</td><td class="mono" data-sensitive="key">{{ s.trailer.key_b }}</td><td>{% for k in s.trailer.default_key_labels %}<span class="pill">{{ k.key_type }} {{ k.label }}</span>{% endfor %}</td></tr>
+      {% else %}<tr><td colspan="5" class="muted">Sem trailers/chaves detectadas. Em Type 2/NTAG isso é esperado.</td></tr>{% endfor %}
+    </table>
+  </div>
+
+  <div id="tab-access" class="tab-panel">
+    {% for s in data.sectors if s.trailer and s.trailer.decoded_access %}
+      <div class="card compact">
+        <h3>Setor {{ s.sector }} — Access <span class="mono">{{ s.trailer.access_bits }}</span> — {{ 'válido' if s.trailer.decoded_access.valid else 'inválido' }}</h3>
+        {% if s.trailer.decoded_access.errors %}<div class="warning">{{ s.trailer.decoded_access.errors|join('; ') }}</div>{% endif %}
+        <table><tr><th>Bloco</th><th>C1C2C3</th><th>Tipo</th><th>Permissões</th></tr>
+          {% for ac in s.trailer.decoded_access.blocks %}
+          <tr><td>{{ ac.block_in_sector }}</td><td class="mono">{{ ac.condition }}</td><td>{{ ac.type }}</td><td>{{ ac.permissions.label }}<br><span class="muted small">{{ ac.permissions }}</span></td></tr>
+          {% endfor %}
+        </table>
+      </div>
+    {% else %}<p class="muted">Nenhum Access Bits MIFARE Classic detectado.</p>{% endfor %}
+  </div>
+
+  <div id="tab-ndef" class="tab-panel">
+    {% if data.ndef.found %}<div class="okbox">NDEF detectado.</div>{% else %}<div class="notice">Nenhum registro NDEF detectado ou o cartão não é Type 2/NTAG.</div>{% endif %}
+    <h3>Registros</h3>
+    {% for r in data.ndef.records %}<div class="block-row"><b>{{ r.record_kind }}</b> {% if r.uri %}<span class="mono">{{ r.uri }}</span>{% endif %}{% if r.text %}<span>{{ r.text }}</span>{% endif %}<pre class="mono small">{{ r }}</pre></div>{% else %}<p class="muted">Sem registros NDEF.</p>{% endfor %}
+    <h3>TLVs</h3>
+    {% for t in data.ndef.tlvs %}<div class="kv"><span>{{ t.type }}</span><b class="mono">{{ t.value_hex or t.tag }}</b></div>{% else %}<p class="muted">Sem TLVs.</p>{% endfor %}
+  </div>
+
+  <div id="tab-relatorio" class="tab-panel">
+    <pre class="mono pre-wrap" data-sensitive-text>{{ data.report|tojson(indent=2) }}</pre>
+  </div>
+</section>
+{% endblock %}

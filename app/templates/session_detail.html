@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="hero"><h2>{{ data.session.name }}</h2><p>{{ data.session.description }} — {{ data.session.status }}</p><div class="actions"><a class="btn" href="/lab">Abrir console</a><a class="btn" href="/dumps">Importar dump</a></div></section>
+<section class="card"><h2>Dumps vinculados</h2><table><tr><th>Dump</th><th>Tipo</th><th>UID</th><th>Risco</th><th></th></tr>{% for d in data.dumps %}<tr><td>#{{ d.dump_id }} — {{ d.dump_name }}</td><td>{{ d.card_type }}</td><td class="mono" data-sensitive="uid">{{ d.uid }}</td><td>{{ d.risk_level }}</td><td><a href="/card-dump/{{ d.dump_id }}">Abrir</a></td></tr>{% else %}<tr><td colspan="5" class="muted">Sem dumps vinculados.</td></tr>{% endfor %}</table></section>
+<section class="card"><h2>Comandos da sessão</h2><div class="scroll">{% for c in data.commands %}<div class="logline"><b class="mono">{{ c.command }}</b> <span class="pill">{{ c.status }}</span><br><span class="muted">{{ c.port }} — {{ c.created_at }}</span><pre class="mono small pre-wrap" data-sensitive-text>{{ c.output[:2000] }}</pre></div>{% else %}<p class="muted">Nenhum comando nesta sessão.</p>{% endfor %}</div></section>
+{% endblock %}

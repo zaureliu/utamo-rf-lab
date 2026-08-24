@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Utamo RFID Lab — Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-page">
+  <main class="login-box">
+    <span class="logo login-logo" aria-hidden="true">RF</span>
+    <h1>Utamo RFID / Proxmark3 Lab</h1>
+    <p>Acesso local autenticado.</p>
+    {% if rate_limited %}<div class="flash flash-error" role="alert">Muitas tentativas. Tente novamente mais tarde.</div>{% endif %}
+    {% with messages = get_flashed_messages() %}{% for message in messages %}<div class="flash flash-error" role="alert">{{ message }}</div>{% endfor %}{% endwith %}
+    <form method="post">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <label for="username">Usuário</label>
+      <input id="username" name="username" autocomplete="username" required autofocus>
+      <label for="password">Senha</label>
+      <input id="password" type="password" name="password" autocomplete="current-password" required>
+      <button type="submit">Entrar</button>
+    </form>
+    <small>Na primeira execução, as credenciais são criadas em <code>runtime/first_run_credentials.txt</code>.</small>
+  </main>
+</body>
+</html>

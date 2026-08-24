@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="hero"><h2>Comparação estática de dumps</h2><p>Compara bytes, blocos e trailers. Similaridade não comprova clonagem, aceitação pelo leitor, mutabilidade do UID ou ausência de verificações no backend.</p></section>
+<section class="card">
+<form method="post" action="/compare"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><div class="row2"><select name="dump_a" data-sensitive-text required>{% for d in dumps %}<option value="{{ d.id }}">#{{ d.id }} — {{ d.dump_name }} — UID: {{ d.uid or '--' }}</option>{% endfor %}</select><select name="dump_b" data-sensitive-text required>{% for d in dumps %}<option value="{{ d.id }}">#{{ d.id }} — {{ d.dump_name }} — UID: {{ d.uid or '--' }}</option>{% endfor %}</select></div><div class="actions"><button type="submit">Comparar dumps</button></div></form>
+{% if error %}<div class="warning">{{ error }}</div>{% endif %}
+</section>
+{% if comparison %}
+<section class="card"><h2>Resultado</h2><div class="notice">{{ comparison.interpretation }}</div><div class="grid4"><div class="metric"><b>Similaridade estática</b><strong>{{ comparison.similarity }}%</strong></div><div class="metric"><b>Blocos alterados</b><strong>{{ comparison.changed_blocks }}</strong></div><div class="metric"><b>Trailers alterados</b><strong>{{ comparison.trailer_changes }}</strong></div><div class="metric"><b>Classificação</b><strong class="metric-small">{{ comparison.comparison_status }}</strong></div></div><div class="scroll"><table><tr><th>Setor</th><th>Bloco</th><th>Tipo</th><th>Dump A</th><th>Dump B</th></tr>{% for c in comparison.changes %}<tr><td>{{ c.sector }}</td><td>{{ c.block }}</td><td>{{ 'trailer' if c.is_trailer else 'data' }}</td><td class="mono diff-a"{% if c.is_trailer %} data-sensitive="mifare-trailer"{% endif %}>{{ c.a or '--' }}</td><td class="mono diff-b"{% if c.is_trailer %} data-sensitive="mifare-trailer"{% endif %}>{{ c.b or '--' }}</td></tr>{% else %}<tr><td colspan="5" class="muted">Nenhuma diferença.</td></tr>{% endfor %}</table></div></section>
+{% endif %}
+{% endblock %}

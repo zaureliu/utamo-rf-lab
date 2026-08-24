@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="hero overview-hero">
+  <div class="toolbar">
+    <div>
+      <div class="eyebrow">Laboratório RFID/NFC</div>
+      <h2 class="heading-reset">Visão geral do laboratório</h2>
+      <p>Acesse o Proxmark3, analise dumps RFID/NFC e consulte protocolos a partir de um único ponto.</p>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="/lab">Abrir Proxmark3</a>
+      <a class="btn" href="/dumps">Analisar dump</a>
+      <a class="btn" href="/protocols">Consultar protocolos</a>
+    </div>
+  </div>
+</section>
+
+<div class="grid">
+  <div class="card metric"><b>Dumps analisados</b><strong>{{ summary.card_dumps }}</strong></div>
+  <div class="card metric"><b>Eventos PM3</b><strong>{{ summary.pm3_events }}</strong></div>
+  <div class="card metric"><b>Cartões MIFARE</b><strong>{{ summary.mifare_cards }}</strong></div>
+  <div class="card metric"><b>Logs Proxmark</b><strong>{{ summary.proxmark_logs }}</strong></div>
+</div>
+
+<section class="quick-grid">
+  <a class="quick-card card-link" href="/lab">
+    <h3>Console Proxmark3</h3>
+    <p>Executar comandos, detectar portas COM e interpretar saídas do cliente.</p>
+    <span class="pill">{{ pm3_mode }}</span>
+  </a>
+  <a class="quick-card card-link" href="/dumps">
+    <h3>Análise de dumps</h3>
+    <p>Importar .json, .eml, .bin, .dump, .mfd, .mct, .mfu e abrir relatório visual.</p>
+    <span class="pill">setores/blocos</span>
+  </a>
+  <a class="quick-card card-link" href="/protocols">
+    <h3>Protocolos</h3>
+    <p>Consultar perfis HF/LF, comandos de laboratório e artefatos esperados.</p>
+    <span class="pill">RRG/Iceman</span>
+  </a>
+  <a class="quick-card card-link" href="/compare">
+    <h3>Comparador</h3>
+    <p>Comparar dumps por bloco, trailer, similaridade e similaridade estática.</p>
+    <span class="pill">diff visual</span>
+  </a>
+  <a class="quick-card card-link" href="/sessions">
+    <h3>Sessões</h3>
+    <p>Agrupar comandos Proxmark3, dumps e evidências por análise.</p>
+    <span class="pill">case lab</span>
+  </a>
+</section>
+
+<div class="grid2">
+  <section class="card">
+    <div class="toolbar">
+      <h2 class="heading-reset">Dumps recentes</h2>
+      <a class="btn" href="/dumps">Ver todos / importar novo</a>
+    </div>
+    <div class="scroll">
+      <table>
+        <tr><th>ID</th><th>Dump</th><th>Cartão</th><th>UID</th><th>Risco</th><th>Blocos</th><th></th></tr>
+        {% for d in dumps %}
+        <tr>
+          <td class="mono">#{{ d.id }}</td>
+          <td>{{ d.dump_name }}<br><span class="muted small">{{ d.created_at }}</span></td>
+          <td>{{ d.card_type }}</td>
+          <td class="mono" data-sensitive="uid">{{ d.uid or '--' }}</td>
+          <td class="risk-{{ d.risk_level }}">{{ d.risk_level }}</td>
+          <td>{{ d.block_count }}</td>
+          <td><a href="/card-dump/{{ d.id }}">Abrir análise</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="muted">Nenhum dump importado.</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="toolbar">
+      <h2 class="heading-reset">Eventos Proxmark recentes</h2>
+      <a class="btn" href="/lab#events">Abrir eventos</a>
+    </div>
+    <div class="scroll">
+      {% for e in pm3_events %}
+        <div class="logline"><span class="pill risk-{{ e.severity }}">{{ e.severity }}</span> <b>{{ e.event_type }}</b> <span class="muted mono">UID=<span data-sensitive="uid">{{ e.uid or '--' }}</span></span><br><span class="muted" data-sensitive-text>{{ e.summary }} — {{ e.created_at }}</span></div>
+      {% else %}
+        <p class="muted">Nenhum evento PM3 registrado.</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

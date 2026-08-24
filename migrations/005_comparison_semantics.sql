@@ -1,0 +1,4 @@
+-- Clean v3 databases use semantically accurate comparison columns.
+-- For existing legacy databases, export/re-import through tools/migrate_legacy_db.py.
+-- Legacy clone_score      -> static_similarity_score
+-- Legacy clone_status     -> comparison_status

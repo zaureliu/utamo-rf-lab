@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="card">
+  <h2>MIFARE Classic — <span data-sensitive="uid">{{ card_uid }}</span></h2>
+  <div class="grid">
+    <div class="metric"><b>Blocos</b><strong>{{ summary.total_blocks }}</strong></div>
+    <div class="metric"><b>Setores</b><strong>{{ summary.total_sectors }}</strong></div>
+    <div class="metric"><b>Trailers</b><strong>{{ summary.trailer_blocks }}</strong></div>
+    <div class="metric"><b>Setores default</b><strong>{{ summary.default_key_sectors }}</strong></div>
+    <div class="metric"><b>ASCII</b><strong>{{ summary.readable_blocks }}</strong></div>
+  </div>
+</section>
+
+{% for s in sectors %}
+<section class="card">
+  <h2>Setor {{ s.sector }} {% if s.contains_default_keys %}<span class="pill risk-HIGH">default key</span>{% endif %} {% if s.contains_ascii %}<span class="pill">ASCII</span>{% endif %}</h2>
+  <div class="scroll">
+    <table><tr><th>Bloco</th><th>Tipo</th><th>HEX</th><th>ASCII</th><th>Key A</th><th>Access</th><th>Key B</th></tr>
+    {% for b in s.blocks %}<tr><td>{{ b.block }}</td><td>{{ b.block_type }}</td><td class="mono"{% if b.block_type == 'trailer' %} data-sensitive="mifare-trailer"{% endif %}>{{ b.data_hex }}</td><td class="mono">{{ b.ascii_preview }}</td><td class="mono" data-sensitive="key">{{ b.key_a }}</td><td class="mono">{{ b.access_bits }}</td><td class="mono" data-sensitive="key">{{ b.key_b }}</td></tr>{% endfor %}
+    </table>
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

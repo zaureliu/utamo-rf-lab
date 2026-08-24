@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="hero"><h2>Erro ao importar/analisar dump</h2><p>O arquivo não gerou blocos ou páginas válidas para análise.</p></section>
+<section class="card"><div class="warning"><b>Detalhe:</b> {{ error }}</div><div class="actions"><a class="btn" href="/dumps#import">Voltar e tentar outro arquivo</a></div></section>
+{% endblock %}

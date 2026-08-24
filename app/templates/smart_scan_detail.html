@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="hero"><h2>Leitura inteligente #{{ data.id }}</h2><p>Estado preservado do fluxo automatizado e das evidências brutas retornadas pelo Proxmark3.</p><div class="actions"><a class="btn" href="/lab#smart-scan">Nova leitura</a><a class="btn" href="/smart-scans">Histórico</a>{% if data.dump_id %}<a class="btn" href="/card-dump/{{ data.dump_id }}">Abrir análise do dump</a>{% endif %}</div></section>
+<div class="grid4">
+  <section class="card metric"><b>Status</b><strong class="metric-detail">{{ data.status }}</strong><span class="muted">{{ data.stage }} — {{ data.progress }}%</span></section>
+  <section class="card metric"><b>Cartão</b><strong class="metric-detail">{{ data.card_type or data.family or '--' }}</strong><span class="muted">{{ data.result.facts.confidence or 0 }}% de confiança</span></section>
+  <section class="card metric"><b>UID</b><strong class="mono metric-detail" data-sensitive="uid">{{ data.uid or '--' }}</strong><span class="muted">ATQA {{ data.result.facts.atqa or '--' }} / SAK {{ data.result.facts.sak or '--' }}</span></section>
+  <section class="card metric"><b>Aquisição</b><strong class="metric-detail">{{ data.acquisition_status or '--' }}</strong><span class="muted">Dump {{ data.dump_id or '--' }}</span></section>
+</div>
+{% if data.error %}<div class="warning">{{ data.error }}</div>{% endif %}
+<section class="card">
+  <h2>Resumo estruturado</h2>
+  <div class="kv"><span>Família</span><span>{{ data.result.facts.family_label or data.card_type or '--' }}</span></div>
+  <div class="kv"><span>Evidência de classificação</span><span data-sensitive-text>{{ (data.result.facts.evidence or [])|join(' • ') or '--' }}</span></div>
+  <div class="kv"><span>ATS</span><span class="mono">{{ data.result.facts.ats or '--' }}</span></div>
+  <div class="kv"><span>Security Level</span><span>{{ data.result.facts.security_level or '--' }}</span></div>
+  <div class="kv"><span>AIDs acessíveis</span><span class="mono">{{ (data.result.facts.aids or [])|join(', ') or '--' }}</span></div>
+  <div class="kv"><span>Páginas observadas na saída</span><span>{{ (data.result.facts.pages or [])|length }}</span></div>
+  <div class="kv"><span>Blocos observados na saída</span><span>{{ (data.result.facts.blocks or [])|length }}</span></div>
+  <div class="kv"><span>Comandos executados</span><span>{{ data.result.commands_executed or data.steps|length }}</span></div>
+  <div class="kv"><span>Comandos concluídos</span><span>{{ data.result.commands_succeeded or 0 }}</span></div>
+  {% for warning in data.result.warnings or [] %}<div class="warning spacer-top-sm">{{ warning }}</div>{% endfor %}
+</section>
+<section class="card">
+  <h2>Etapas e saída bruta</h2>
+  {% for step in data.steps %}<details class="block-row" {% if loop.last %}open{% endif %}>
+    <summary><span class="pill">{{ step.status }}</span> <b>{{ step.stage }}</b> <span class="mono">{{ step.command }}</span> <span class="muted">{{ step.started_at }}{% if step.finished_at %} → {{ step.finished_at }}{% endif %}</span></summary>
+    <div class="kv"><span>Família detectada</span><span>{{ step.parsed.family_label or '--' }} ({{ step.parsed.confidence or 0 }}%)</span></div>
+    <div class="kv"><span>UID observado</span><span class="mono" data-sensitive="uid">{{ step.parsed.uid or '--' }}</span></div>
+    <pre class="mono evidence-output" data-sensitive-text>{{ (step.output or step.output_excerpt or 'Sem saída.')[:12000] }}{% if (step.output or step.output_excerpt or '')|length > 12000 %}
+… [saída truncada na interface]{% endif %}</pre>
+  </details>{% else %}<p class="muted">Nenhuma etapa registrada.</p>{% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="hero"><h2>Leituras inteligentes</h2><p>Histórico de detecção, classificação, aquisição read-only e encaminhamento automático ao analisador.</p><div class="actions"><a class="btn" href="/lab#smart-scan">Nova leitura</a></div></section>
+<section class="card">
+  <div class="scroll"><table>
+    <tr><th>ID</th><th>Status</th><th>Progresso</th><th>Cartão</th><th>UID</th><th>Aquisição</th><th>Dump</th><th>Atualizado</th></tr>
+    {% for j in jobs %}<tr>
+      <td><a href="/smart-scan/{{ j.id }}">#{{ j.id }}</a></td>
+      <td><span class="pill">{{ j.status }}</span><br><span class="muted small">{{ j.stage }}</span></td>
+      <td>{{ j.progress }}%</td><td>{{ j.card_type or j.family or '--' }}</td><td class="mono" data-sensitive="uid">{{ j.uid or '--' }}</td>
+      <td>{{ j.acquisition_status or '--' }}</td><td>{% if j.dump_id %}<a href="/card-dump/{{ j.dump_id }}">#{{ j.dump_id }}</a>{% else %}--{% endif %}</td><td class="muted">{{ j.updated_at }}</td>
+    </tr>{% else %}<tr><td colspan="8" class="muted">Nenhuma leitura registrada.</td></tr>{% endfor %}
+  </table></div>
+</section>
+{% endblock %}

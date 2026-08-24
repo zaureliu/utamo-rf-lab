@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="hero">
+  <h2>Catálogo de protocolos e comandos</h2>
+  <p>Consulta técnica separada da tela inicial. Use esta área para escolher comandos por protocolo e consultar artefatos esperados em HF/LF.</p>
+</section>
+
+<div class="grid">
+  <div class="card metric"><b>Protocolos</b><strong>{{ protocol_summary.protocols }}</strong></div>
+  <div class="card metric"><b>Comandos catálogo</b><strong>{{ protocol_summary.catalog_commands }}</strong></div>
+  <div class="card metric"><b>HF</b><strong>{{ protocol_summary.hf_protocols }}</strong></div>
+  <div class="card metric"><b>LF</b><strong>{{ protocol_summary.lf_protocols }}</strong></div>
+</div>
+
+<section class="card">
+  <h2>Perfis</h2>
+  <div class="protocol-grid">
+    {% for p in protocols %}
+    <div class="protocol-card riskbox-{{ p.risk }}">
+      <h3>{{ p.name }}</h3>
+      <div class="protocol-meta">
+        <span class="pill">{{ p.family }}</span>
+        <span class="pill">{{ p.band }}</span>
+        <span class="pill risk-{{ p.risk }}">{{ p.risk }}</span>
+      </div>
+      <p class="muted">{{ p.description }}</p>
+      <div><b>Comandos de laboratório</b></div>
+      <ul class="mini-list">
+        {% for cmd in p.lab_commands[:10] %}<li class="mono">{{ cmd }}</li>{% endfor %}
+      </ul>
+      <details class="spacer-top-sm">
+        <summary>Detalhes técnicos</summary>
+        <p><b>Padrão:</b> {{ p.standard }}<br><b>Frequência:</b> {{ p.frequency }}</p>
+        <p><b>Artefatos:</b> {{ ', '.join(p.artifacts) }}</p>
+        <p><b>Avançados/sensíveis:</b> {{ ', '.join(p.advanced_commands[:12]) }}</p>
+        <p><b>Fluxo:</b> {{ ' → '.join(p.workflow) }}</p>
+      </details>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
